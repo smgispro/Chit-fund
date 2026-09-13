@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Chit Fund Manager</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.matrix {
+  overflow-x: auto;
+}
+
+.winner-box {
+  animation: pop .45s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(.7);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.draw-spin {
+  animation: pulse .5s infinite;
+}
+</style>
+</head>
+
+<body class="bg-slate-100 text-slate-800">
+
+<!-- ======================================================
+     HEADER
+====================================================== -->
+
+<header class="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-lg">
+
+  <div class="max-w-7xl mx-auto px-4 py-5">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold">
+          💰 Chit Fund Manager
+        </h1>
+
+        <p class="text-indigo-100 text-sm mt-1">
+          Monthly Lucky Draw • Payment Tracking
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+
+        <button
+          onclick="exportData()"
+          class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-semibold"
+        >
+          📤 Export
+        </button>
+
+        <label
+          class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-semibold cursor-pointer"
+        >
+          📥 Import
+
+          <input
+            type="file"
+            accept=".json"
+            onchange="importData(event)"
+            class="hidden"
+          >
+        </label>
+
+        <button
+          onclick="resetAll()"
+          class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold"
+        >
+          🗑 Reset
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main class="max-w-7xl mx-auto px-3 md:px-5 py-6">
+
+
+<!-- ======================================================
+     MONTH SELECTOR
+====================================================== -->
+
+<section class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+
+  <div class="flex flex-col md:flex-row md:items-end gap-4">
+
+    <div>
+
+      <label class="block text-sm font-bold text-slate-600 mb-2">
+        Active Month
+      </label>
+
+      <select
+        id="monthSelector"
+        onchange="changeMonth()"
+        class="w-full md:w-80 border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+      ></select>
+
+    </div>
+
+    <div class="text-sm text-slate-500 pb-2">
+      Draw cycle: <b>October → September</b>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ======================================================
+     DASHBOARD
+====================================================== -->
+
+<section class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <p class="text-xs text-slate-500 font-bold uppercase">
+      Active Month
+    </p>
+
+    <p
+      id="activeMonthCard"
+      class="text-lg font-bold text-indigo-600 mt-2"
+    ></p>
+  </div>
+
+
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <p class="text-xs text-slate-500 font-bold uppercase">
+      Winner
+    </p>
+
+    <p
+      id="winnerCard"
+      class="text-lg font-bold text-purple-600 mt-2"
+    ></p>
+  </div>
+
+
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <p class="text-xs text-slate-500 font-bold uppercase">
+      Cash
+    </p>
+
+    <p
+      id="cashCard"
+      class="text-lg font-bold text-green-600 mt-2"
+    ></p>
+  </div>
+
+
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <p class="text-xs text-slate-500 font-bold uppercase">
+      Online
+    </p>
+
+    <p
+      id="onlineCard"
+      class="text-lg font-bold text-blue-600 mt-2"
+    ></p>
+  </div>
+
+
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <p class="text-xs text-slate-500 font-bold uppercase">
+      Pending
+    </p>
+
+    <p
+      id="pendingCard"
+      class="text-lg font-bold text-red-600 mt-2"
+    ></p>
+  </div>
+
+</section>
+
+
+<!-- ======================================================
+     LUCKY DRAW
+====================================================== -->
+
+<section class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+
+  <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-5">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+      <div>
+
+        <h2 class="text-xl font-bold">
+          🎰 Lucky Draw
+        </h2>
+
+        <p class="text-purple-100 text-sm mt-1">
+          Selected Month:
+          <b id="drawMonthName"></b>
+        </p>
+
+      </div>
+
+
+      <div class="flex flex-wrap gap-2">
+
+        <button
+          id="drawButton"
+          onclick="conductDraw()"
+          class="bg-white text-purple-700 hover:bg-purple-50 px-6 py-3 rounded-xl font-bold shadow"
+        >
+          🎲 Spin / Draw Winner
+        </button>
+
+        <button
+          id="editButton"
+          onclick="editWinner()"
+          class="hidden bg-yellow-400 hover:bg-yellow-300 text-yellow-900 px-5 py-3 rounded-xl font-bold"
+        >
+          ✏️ Edit Winner
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="p-5">
+
+    <!-- WINNER -->
+
+    <div
+      id="winnerDisplay"
+      class="hidden winner-box text-center bg-yellow-50 border border-yellow-200 rounded-2xl p-8 mb-6"
+    >
+
+      <div class="text-5xl">
+        🏆
+      </div>
+
+      <p class="text-xs text-slate-500 uppercase font-bold mt-3">
+        Winner
+      </p>
+
+      <h2
+        id="winnerName"
+        class="text-3xl md:text-4xl font-black text-purple-700 mt-2"
+      ></h2>
+
+      <p class="text-sm text-slate-500 mt-2">
+        This member has 0% chance in all future draws.
+      </p>
+
+    </div>
+
+
+    <!-- DRAW ELIGIBILITY -->
+
+    <div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+
+        <h3 class="font-bold">
+          🎯 Eligible for Draw
+        </h3>
+
+        <span class="text-xs text-slate-500">
+          Poonam, Tarak & Usha are permanently excluded.
+        </span>
+
+      </div>
+
+
+      <div
+        id="eligibleMembers"
+        class="flex flex-wrap gap-2"
+      ></div>
+
+    </div>
+
+
+    <!-- PERMANENTLY EXCLUDED -->
+
+    <div class="mt-5">
+
+      <h3 class="font-bold text-sm mb-2">
+        🚫 Permanently Excluded From Draw
+      </h3>
+
+      <div class="flex flex-wrap gap-2">
+
+        <span class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-full text-sm font-semibold">
+          Poonam
+        </span>
+
+        <span class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-full text-sm font-semibold">
+          Tarak
+        </span>
+
+        <span class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-full text-sm font-semibold">
+          Usha
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ======================================================
+     WINNER HISTORY
+====================================================== -->
+
+<section class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+
+    <h2 class="text-xl font-bold">
+      🏆 Winners History
+    </h2>
+
+    <span
+      id="winnerCount"
+      class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold"
+    ></span>
+
+  </div>
+
+
+  <div
+    id="winnerHistory"
+    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+  ></div>
+
+</section>
+
+
+<!-- ======================================================
+     UNPAID MEMBERS
+====================================================== -->
+
+<section class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+
+  <h2 class="text-xl font-bold mb-4">
+    ⚠️ Unpaid Members
+  </h2>
+
+  <div
+    id="unpaidMembers"
+    class="flex flex-wrap gap-2"
+  ></div>
+
+</section>
+
+
+<!-- ======================================================
+     PAYMENT MATRIX
+====================================================== -->
+
+<section class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+
+  <div class="p-5 border-b">
+
+    <h2 class="text-xl font-bold">
+      💳 Payment Tracking
+    </h2>
+
+    <p class="text-sm text-slate-500 mt-1">
+      All members remain here even if they are excluded from the draw.
+    </p>
+
+  </div>
+
+
+  <div class="matrix">
+
+    <table class="w-full text-sm border-collapse">
+
+      <thead id="matrixHead"
+             class="bg-slate-50">
+      </thead>
+
+      <tbody id="paymentMatrix"></tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+<footer class="text-center text-sm text-slate-500 py-6">
+
+  <p>
+    💾 Data automatically saved in this browser.
+  </p>
+
+</footer>
+
+</main>
+
+
+<!-- ======================================================
+     PAYMENT MODAL
+====================================================== -->
+
+<div
+  id="paymentModal"
+  class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+>
+
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+
+    <div class="p-5 border-b flex items-center justify-between">
+
+      <div>
+
+        <h2 class="text-xl font-bold">
+          Payment Details
+        </h2>
+
+        <p
+          id="modalMember"
+          class="text-sm text-slate-500"
+        ></p>
+
+      </div>
+
+      <button
+        onclick="closePaymentModal()"
+        class="text-2xl text-slate-400 hover:text-slate-700"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="p-5">
+
+      <label class="block text-sm font-bold mb-2">
+        Payment Status
+      </label>
+
+      <select
+        id="paymentStatus"
+        class="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4"
+      >
+        <option value="unpaid">
+          🔴 Unpaid
+        </option>
+
+        <option value="cash">
+          🟢 Paid via Cash
+        </option>
+
+        <option value="online">
+          🔵 Paid Online
+        </option>
+      </select>
+
+
+      <label class="block text-sm font-bold mb-2">
+        Amount
+      </label>
+
+      <input
+        id="paymentAmount"
+        type="number"
+        min="0"
+        placeholder="₹ Amount"
+        class="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4"
+      >
+
+
+      <label class="block text-sm font-bold mb-2">
+        Transaction ID / Notes
+      </label>
+
+      <textarea
+        id="paymentNotes"
+        rows="3"
+        placeholder="UPI reference, transaction ID, or notes..."
+        class="w-full border border-slate-300 rounded-xl px-4 py-3 mb-5"
+      ></textarea>
+
+
+      <button
+        onclick="savePayment()"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold"
+      >
+        Save Payment
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* ======================================================
+   MEMBERS
+====================================================== */
+
+const members = [
+
+  "Mom",
+
+  "Poonam",
+
+  "Tarak",
+
+  "Usha",
+
+  "Rinku",
+
+  "Vaishali",
+
+  "Harshida",
+
+  "Priya",
+
+  "Dhruv",
+
+  "Kavya",
+
+  "Pooja",
+
+  "Krish",
+
+  "Jainil",
+
+  "Khushi"
+
+];
+
+
+/* ======================================================
+   PERMANENT DRAW EXCLUSIONS
+======================================================
+
+IMPORTANT:
+These members remain in payment tracking.
+
+They are ONLY excluded from the lucky draw.
+====================================================== */
+
+const permanentlyExcluded = [
+
+  "Poonam",
+
+  "Tarak",
+
+  "Usha"
+
+];
+
+
+/* ======================================================
+   MONTHS
+====================================================== */
+
+const months = [
+
+  "OCTOBER",
+
+  "NOVEMBER",
+
+  "DECEMBER",
+
+  "JANUARY",
+
+  "FEBRUARY",
+
+  "MARCH",
+
+  "APRIL",
+
+  "MAY",
+
+  "JUNE",
+
+  "JULY",
+
+  "AUGUST",
+
+  "SEPTEMBER"
+
+];
+
+
+const STORAGE_KEY =
+  "chitFundManager_FINAL_v4";
+
+
+/* ======================================================
+   STATE
+====================================================== */
+
+let state = {
+
+  activeMonth: 0,
+
+  winners: {},
+
+  payments: {}
+
+};
+
+
+let editingMonth = null;
+
+
+/* ======================================================
+   MODAL
+====================================================== */
+
+let modalMonth = null;
+
+let modalMember = null;
+
+
+/* ======================================================
+   INITIALIZE
+====================================================== */
+
+function init() {
+
+  const saved =
+    localStorage.getItem(STORAGE_KEY);
+
+
+  if (saved) {
+
+    try {
+
+      const loaded =
+        JSON.parse(saved);
+
+
+      state = {
+
+        activeMonth:
+          Number.isInteger(
+            loaded.activeMonth
+          )
+            ? loaded.activeMonth
+            : 0,
+
+        winners:
+          loaded.winners || {},
+
+        payments:
+          loaded.payments || {}
+
+      };
+
+    }
+    catch(error) {
+
+      console.log(
+        "Could not load saved data."
+      );
+
+    }
+
+  }
+
+
+  createPaymentData();
+
+  save();
+
+  render();
+
+}
+
+
+/* ======================================================
+   CREATE PAYMENT DATA
+====================================================== */
+
+function createPaymentData() {
+
+  months.forEach(month => {
+
+    if (!state.payments[month]) {
+
+      state.payments[month] = {};
+
+    }
+
+
+    members.forEach(member => {
+
+      if (
+        !state.payments[month][member]
+      ) {
+
+        state.payments[month][member] = {
+
+          status: "unpaid",
+
+          amount: 0,
+
+          notes: ""
+
+        };
+
+      }
+
+    });
+
+  });
+
+}
+
+
+/* ======================================================
+   SAVE
+====================================================== */
+
+function save() {
+
+  localStorage.setItem(
+
+    STORAGE_KEY,
+
+    JSON.stringify(state)
+
+  );
+
+}
+
+
+/* ======================================================
+   ACTIVE MONTH
+====================================================== */
+
+function getActiveMonth() {
+
+  return months[
+    state.activeMonth
+  ];
+
+}
+
+
+/* ======================================================
+   MONTH CHANGE
+====================================================== */
+
+function changeMonth() {
+
+  state.activeMonth =
+    Number(
+      document.getElementById(
+        "monthSelector"
+      ).value
+    );
+
+
+  save();
+
+  render();
+
+}
+
+
+/* ======================================================
+   GET WINNERS FROM OTHER MONTHS
+====================================================== */
+
+function getUsedWinners(excludeMonth = null) {
+
+  const used = [];
+
+
+  months.forEach(month => {
+
+    if (
+      month !== excludeMonth &&
+      state.winners[month]
+    ) {
+
+      used.push(
+        state.winners[month]
+      );
+
+    }
+
+  });
+
+
+  return used;
+
+}
+
+
+/* ======================================================
+   GET ELIGIBLE MEMBERS
+======================================================
+
+RULES:
+
+1. Poonam, Tarak, Usha are never eligible.
+2. Anyone who already won another month = 0%.
+3. If editing a month, its old winner becomes
+   eligible again.
+====================================================== */
+
+function getEligibleMembers(excludeMonth = null) {
+
+  const usedWinners =
+    getUsedWinners(
+      excludeMonth
+    );
+
+
+  return members.filter(member => {
+
+    if (
+      permanentlyExcluded.includes(
+        member
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      usedWinners.includes(
+        member
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    return true;
+
+  });
+
+}
+
+
+/* ======================================================
+   CONDUCT DRAW
+====================================================== */
+
+function conductDraw() {
+
+  const month =
+    getActiveMonth();
+
+
+  /*
+     If winner already exists,
+     tell user to use Edit Winner.
+  */
+
+  if (
+    state.winners[month] &&
+    editingMonth === null
+  ) {
+
+    alert(
+      "A winner already exists for " +
+      month +
+      ".\n\nUse ✏️ Edit Winner to change it."
+    );
+
+    return;
+
+  }
+
+
+  /*
+     When editing, exclude the current month
+     so its old winner becomes eligible again.
+  */
+
+  const eligible =
+    getEligibleMembers(
+      editingMonth !== null
+        ? editingMonth
+        : null
+    );
+
+
+  if (eligible.length === 0) {
+
+    alert(
+      "No eligible members are left."
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById(
+      "drawButton"
+    );
+
+
+  const display =
+    document.getElementById(
+      "winnerDisplay"
+    );
+
+
+  const winnerName =
+    document.getElementById(
+      "winnerName"
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    "🎰 Drawing...";
+
+
+  display.classList.remove(
+    "hidden"
+  );
+
+
+  let count = 0;
+
+
+  const animation =
+    setInterval(() => {
+
+      const randomMember =
+        eligible[
+          Math.floor(
+            Math.random() *
+            eligible.length
+          )
+        ];
+
+
+      winnerName.textContent =
+        randomMember;
+
+
+      count++;
+
+
+      if (count >= 20) {
+
+        clearInterval(
+          animation
+        );
+
+
+        /*
+           FINAL RANDOM WINNER
+        */
+
+        const winner =
+          eligible[
+            Math.floor(
+              Math.random() *
+              eligible.length
+            )
+          ];
+
+
+        state.winners[month] =
+          winner;
+
+
+        /*
+           Editing finished.
+        */
+
+        editingMonth = null;
+
+
+        save();
+
+        render();
+
+      }
+
+    }, 100);
+
+}
+
+
+/* ======================================================
+   EDIT WINNER
+====================================================== */
+
+function editWinner() {
+
+  const month =
+    getActiveMonth();
+
+
+  const oldWinner =
+    state.winners[month];
+
+
+  if (!oldWinner) {
+
+    alert(
+      "There is no winner for this month."
+    );
+
+    return;
+
+  }
+
+
+  const confirmation =
+    confirm(
+
+      "Current winner: " +
+      oldWinner +
+      "\n\n" +
+
+      "Do you want to redraw this month?\n\n" +
+
+      "The old winner will become eligible again."
+
+    );
+
+
+  if (!confirmation) {
+
+    return;
+
+  }
+
+
+  /*
+     Remove ONLY the winner record.
+
+     PAYMENT DATA IS NOT TOUCHED.
+  */
+
+  delete state.winners[month];
+
+
+  editingMonth =
+    month;
+
+
+  save();
+
+  render();
+
+
+  /*
+     Start replacement draw.
+  */
+
+  setTimeout(
+    conductDraw,
+    200
+  );
+
+}
+
+
+/* ======================================================
+   RENDER EVERYTHING
+====================================================== */
+
+function render() {
+
+  renderMonthSelector();
+
+  renderDashboard();
+
+  renderDraw();
+
+  renderEligible();
+
+  renderWinnerHistory();
+
+  renderUnpaid();
+
+  renderPaymentMatrix();
+
+}
+
+
+/* ======================================================
+   MONTH SELECTOR
+====================================================== */
+
+function renderMonthSelector() {
+
+  const select =
+    document.getElementById(
+      "monthSelector"
+    );
+
+
+  select.innerHTML = "";
+
+
+  months.forEach(
+    (month, index) => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        index;
+
+
+      option.textContent =
+        month;
+
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  select.value =
+    state.activeMonth;
+
+}
+
+
+/* ======================================================
+   DASHBOARD
+====================================================== */
+
+function renderDashboard() {
+
+  const month =
+    getActiveMonth();
+
+
+  const winner =
+    state.winners[month];
+
+
+  document.getElementById(
+    "activeMonthCard"
+  ).textContent =
+    month;
+
+
+  document.getElementById(
+    "winnerCard"
+  ).textContent =
+    winner ||
+    "Not Drawn";
+
+
+  let cash = 0;
+
+  let online = 0;
+
+  let pending = 0;
+
+
+  members.forEach(member => {
+
+    const payment =
+      state.payments[month][member];
+
+
+    const amount =
+      Number(
+        payment.amount
+      ) || 0;
+
+
+    if (
+      payment.status ===
+      "cash"
+    ) {
+
+      cash += amount;
+
+    }
+    else if (
+      payment.status ===
+      "online"
+    ) {
+
+      online += amount;
+
+    }
+    else {
+
+      pending += amount;
+
+    }
+
+  });
+
+
+  document.getElementById(
+    "cashCard"
+  ).textContent =
+    money(cash);
+
+
+  document.getElementById(
+    "onlineCard"
+  ).textContent =
+    money(online);
+
+
+  document.getElementById(
+    "pendingCard"
+  ).textContent =
+    money(pending);
+
+}
+
+
+/* ======================================================
+   DRAW DISPLAY
+====================================================== */
+
+function renderDraw() {
+
+  const month =
+    getActiveMonth();
+
+
+  const winner =
+    state.winners[month];
+
+
+  document.getElementById(
+    "drawMonthName"
+  ).textContent =
+    month;
+
+
+  const display =
+    document.getElementById(
+      "winnerDisplay"
+    );
+
+
+  const name =
+    document.getElementById(
+      "winnerName"
+    );
+
+
+  const drawButton =
+    document.getElementById(
+      "drawButton"
+    );
+
+
+  const editButton =
+    document.getElementById(
+      "editButton"
+    );
+
+
+  if (winner) {
+
+    display.classList.remove(
+      "hidden"
+    );
+
+
+    name.textContent =
+      winner;
+
+
+    drawButton.classList.add(
+      "hidden"
+    );
+
+
+    editButton.classList.remove(
+      "hidden"
+    );
+
+  }
+  else {
+
+    display.classList.add(
+      "hidden"
+    );
+
+
+    drawButton.classList.remove(
+      "hidden"
+    );
+
+
+    drawButton.disabled =
+      false;
+
+
+    drawButton.textContent =
+      "🎲 Spin / Draw Winner";
+
+
+    editButton.classList.add(
+      "hidden"
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   ELIGIBLE DISPLAY
+====================================================== */
+
+function renderEligible() {
+
+  const container =
+    document.getElementById(
+      "eligibleMembers"
+    );
+
+
+  container.innerHTML = "";
+
+
+  /*
+     The current month's winner should not
+     be shown as an available candidate.
+  */
+
+  const eligible =
+    getEligibleMembers(
+      getActiveMonth()
+    );
+
+
+  eligible.forEach(member => {
+
+    const span =
+      document.createElement(
+        "span"
+      );
+
+
+    span.className =
+      "bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-full text-sm font-semibold";
+
+
+    span.textContent =
+      member;
+
+
+    container.appendChild(
+      span
+    );
+
+  });
+
+
+  if (
+    eligible.length === 0
+  ) {
+
+    container.innerHTML =
+      `<span class="text-sm text-slate-500">
+        No eligible members remaining.
+      </span>`;
+
+  }
+
+}
+
+
+/* ======================================================
+   WINNER HISTORY
+====================================================== */
+
+function renderWinnerHistory() {
+
+  const container =
+    document.getElementById(
+      "winnerHistory"
+    );
+
+
+  container.innerHTML = "";
+
+
+  let count = 0;
+
+
+  months.forEach(month => {
+
+    const winner =
+      state.winners[month];
+
+
+    if (winner) {
+
+      count++;
+
+    }
+
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+
+    card.className =
+      winner
+
+        ? "bg-purple-50 border border-purple-200 rounded-xl p-4"
+
+        : "bg-slate-50 border border-slate-200 rounded-xl p-4";
+
+
+    card.innerHTML = `
+
+      <div class="text-xs font-bold ${
+        winner
+          ? "text-purple-500"
+          : "text-slate-400"
+      }">
+
+        ${month}
+
+      </div>
+
+
+      <div class="font-bold mt-2 ${
+        winner
+          ? "text-purple-800"
+          : "text-slate-400"
+      }">
+
+        ${
+          winner
+            ? "🏆 " +
+              escapeHTML(winner)
+            : "Not Drawn"
+        }
+
+      </div>
+
+    `;
+
+
+    container.appendChild(
+      card
+    );
+
+  });
+
+
+  document.getElementById(
+    "winnerCount"
+  ).textContent =
+    count +
+    " / " +
+    months.length;
+
+}
+
+
+/* ======================================================
+   UNPAID MEMBERS
+======================================================
+
+IMPORTANT:
+This uses ALL members.
+
+Poonam, Tarak and Usha are NOT removed here.
+====================================================== */
+
+function renderUnpaid() {
+
+  const container =
+    document.getElementById(
+      "unpaidMembers"
+    );
+
+
+  container.innerHTML = "";
+
+
+  const month =
+    getActiveMonth();
+
+
+  const unpaid =
+    members.filter(
+      member =>
+
+        state.payments[month][member]
+          .status ===
+        "unpaid"
+
+    );
+
+
+  if (
+    unpaid.length === 0
+  ) {
+
+    container.innerHTML =
+      `<span class="bg-green-50 text-green-700 border border-green-200 px-4 py-3 rounded-xl">
+        ✅ Everyone has paid for ${month}.
+      </span>`;
+
+    return;
+
+  }
+
+
+  unpaid.forEach(member => {
+
+    const span =
+      document.createElement(
+        "span"
+      );
+
+
+    span.className =
+      "bg-red-50 text-red-700 border border-red-200 px-3 py-2 rounded-full text-sm font-semibold";
+
+
+    span.textContent =
+      "🔴 " +
+      member;
+
+
+    container.appendChild(
+      span
+    );
+
+  });
+
+}
+
+
+/* ======================================================
+   PAYMENT MATRIX
+======================================================
+
+IMPORTANT:
+ALL 14 MEMBERS ARE ALWAYS SHOWN.
+Draw exclusions do not affect payments.
+====================================================== */
+
+function renderPaymentMatrix() {
+
+  const head =
+    document.getElementById(
+      "matrixHead"
+    );
+
+
+  const body =
+    document.getElementById(
+      "paymentMatrix"
+    );
+
+
+  head.innerHTML = "";
+
+  body.innerHTML = "";
+
+
+  /*
+     HEADER
+  */
+
+  const headerRow =
+    document.createElement(
+      "tr"
+    );
+
+
+  const memberHeader =
+    document.createElement(
+      "th"
+    );
+
+
+  memberHeader.className =
+    "sticky left-0 bg-slate-50 z-10 p-3 border-b border-r text-left min-w-[140px]";
+
+
+  memberHeader.textContent =
+    "Member";
+
+
+  headerRow.appendChild(
+    memberHeader
+  );
+
+
+  months.forEach(month => {
+
+    const th =
+      document.createElement(
+        "th"
+      );
+
+
+    th.className =
+      "p-3 border-b border-r min-w-[150px] text-center";
+
+
+    if (
+      month === getActiveMonth()
+    ) {
+
+      th.classList.add(
+        "bg-indigo-100",
+        "text-indigo-700"
+      );
+
+    }
+
+
+    th.textContent =
+      month;
+
+
+    headerRow.appendChild(
+      th
+    );
+
+  });
+
+
+  head.appendChild(
+    headerRow
+  );
+
+
+  /*
+     ALL MEMBERS
+  */
+
+  members.forEach(member => {
+
+    const row =
+      document.createElement(
+        "tr"
+      );
+
+
+    const memberCell =
+      document.createElement(
+        "td"
+      );
+
+
+    memberCell.className =
+      "sticky left-0 bg-white z-10 p-3 border-b border-r font-bold";
+
+
+    memberCell.textContent =
+      member;
+
+
+    row.appendChild(
+      memberCell
+    );
+
+
+    months.forEach(month => {
+
+      const cell =
+        document.createElement(
+          "td"
+        );
+
+
+      cell.className =
+        "p-2 border-b border-r min-w-[150px]";
+
+
+      const payment =
+        state.payments[month][member];
+
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+
+      button.className =
+        paymentClass(
+          payment.status
+        );
+
+
+      button.textContent =
+        paymentLabel(
+          payment.status
+        );
+
+
+      button.onclick =
+        () =>
+          openPaymentModal(
+            month,
+            member
+          );
+
+
+      cell.appendChild(
+        button
+      );
+
+
+      /*
+         Amount
+      */
+
+      if (
+        Number(
+          payment.amount
+        ) > 0
+      ) {
+
+        const amount =
+          document.createElement(
+            "div"
+          );
+
+
+        amount.className =
+          "text-xs text-center text-slate-500 mt-1";
+
+
+        amount.textContent =
+          money(
+            payment.amount
+          );
+
+
+        cell.appendChild(
+          amount
+        );
+
+      }
+
+
+      /*
+         Notes
+      */
+
+      if (
+        payment.notes
+      ) {
+
+        const notes =
+          document.createElement(
+            "div"
+          );
+
+
+        notes.className =
+          "text-xs text-slate-400 text-center truncate mt-1";
+
+
+        notes.title =
+          payment.notes;
+
+
+        notes.textContent =
+          payment.notes;
+
+
+        cell.appendChild(
+          notes
+        );
+
+      }
+
+
+      row.appendChild(
+        cell
+      );
+
+    });
+
+
+    body.appendChild(
+      row
+    );
+
+  });
+
+}
+
+
+/* ======================================================
+   PAYMENT COLORS
+====================================================== */
+
+function paymentClass(status) {
+
+  const base =
+    "w-full py-2 px-2 rounded-lg text-xs font-bold transition";
+
+
+  if (
+    status === "cash"
+  ) {
+
+    return base +
+      " bg-green-100 text-green-700 hover:bg-green-200";
+
+  }
+
+
+  if (
+    status === "online"
+  ) {
+
+    return base +
+      " bg-blue-100 text-blue-700 hover:bg-blue-200";
+
+  }
+
+
+  return base +
+    " bg-red-100 text-red-700 hover:bg-red-200";
+
+}
+
+
+/* ======================================================
+   PAYMENT LABEL
+====================================================== */
+
+function paymentLabel(status) {
+
+  if (
+    status === "cash"
+  ) {
+
+    return "🟢 Cash";
+
+  }
+
+
+  if (
+    status === "online"
+  ) {
+
+    return "🔵 Online";
+
+  }
+
+
+  return "🔴 Unpaid";
+
+}
+
+
+/* ======================================================
+   OPEN PAYMENT MODAL
+====================================================== */
+
+function openPaymentModal(
+  month,
+  member
+) {
+
+  modalMonth =
+    month;
+
+
+  modalMember =
+    member;
+
+
+  const payment =
+    state.payments[
+      month
+    ][
+      member
+    ];
+
+
+  document.getElementById(
+    "modalMember"
+  ).textContent =
+    member +
+    " • " +
+    month;
+
+
+  document.getElementById(
+    "paymentStatus"
+  ).value =
+    payment.status;
+
+
+  document.getElementById(
+    "paymentAmount"
+  ).value =
+    payment.amount ||
+    "";
+
+
+  document.getElementById(
+    "paymentNotes"
+  ).value =
+    payment.notes ||
+    "";
+
+
+  document.getElementById(
+    "paymentModal"
+  ).classList.remove(
+    "hidden"
+  );
+
+}
+
+
+/* ======================================================
+   SAVE PAYMENT
+====================================================== */
+
+function savePayment() {
+
+  if (
+    !modalMonth ||
+    !modalMember
+  ) {
+
+    return;
+
+  }
+
+
+  state.payments[
+    modalMonth
+  ][
+    modalMember
+  ] = {
+
+    status:
+      document.getElementById(
+        "paymentStatus"
+      ).value,
+
+    amount:
+      Number(
+        document.getElementById(
+          "paymentAmount"
+        ).value
+      ) || 0,
+
+    notes:
+      document.getElementById(
+        "paymentNotes"
+      ).value.trim()
+
+  };
+
+
+  save();
+
+  closePaymentModal();
+
+  render();
+
+}
+
+
+/* ======================================================
+   CLOSE PAYMENT MODAL
+====================================================== */
+
+function closePaymentModal() {
+
+  document.getElementById(
+    "paymentModal"
+  ).classList.add(
+    "hidden"
+  );
+
+
+  modalMonth = null;
+
+  modalMember = null;
+
+}
+
+
+/* ======================================================
+   MONEY FORMAT
+====================================================== */
+
+function money(value) {
+
+  return "₹" +
+    Number(
+      value || 0
+    ).toLocaleString(
+      "en-IN"
+    );
+
+}
+
+
+/* ======================================================
+   EXPORT BACKUP
+====================================================== */
+
+function exportData() {
+
+  const backup = {
+
+    app:
+      "Chit Fund Manager",
+
+    version:
+      4,
+
+    members:
+      members,
+
+    permanentlyExcluded:
+      permanentlyExcluded,
+
+    months:
+      months,
+
+    exportedAt:
+      new Date().toISOString(),
+
+    state:
+      state
+
+  };
+
+
+  const blob =
+    new Blob(
+
+      [
+        JSON.stringify(
+          backup,
+          null,
+          2
+        )
+      ],
+
+      {
+        type:
+          "application/json"
+      }
+
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+
+  link.download =
+    "chit-fund-backup.json";
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  link.remove();
+
+
+  URL.revokeObjectURL(
+    url
+  );
+
+}
+
+
+/* ======================================================
+   IMPORT BACKUP
+====================================================== */
+
+function importData(event) {
+
+  const file =
+    event.target.files[0];
+
+
+  if (!file) {
+
+    return;
+
+  }
+
+
+  const reader =
+    new FileReader();
+
+
+  reader.onload =
+    function(e) {
+
+      try {
+
+        const backup =
+          JSON.parse(
+            e.target.result
+          );
+
+
+        if (
+          !backup.state ||
+          !backup.state.winners ||
+          !backup.state.payments
+        ) {
+
+          alert(
+            "Invalid backup file."
+          );
+
+          return;
+
+        }
+
+
+        const confirmed =
+          confirm(
+            "Import this backup?\n\n" +
+            "Current data will be replaced."
+          );
+
+
+        if (!confirmed) {
+
+          return;
+
+        }
+
+
+        state =
+          backup.state;
+
+
+        createPaymentData();
+
+        save();
+
+        render();
+
+
+        alert(
+          "Backup imported successfully!"
+        );
+
+      }
+      catch(error) {
+
+        alert(
+          "Could not read this backup file."
+        );
+
+      }
+
+    };
+
+
+  reader.readAsText(
+    file
+  );
+
+
+  event.target.value = "";
+
+}
+
+
+/* ======================================================
+   RESET
+====================================================== */
+
+function resetAll() {
+
+  const first =
+    confirm(
+      "⚠️ Reset all winners and payment records?"
+    );
+
+
+  if (!first) {
+
+    return;
+
+  }
+
+
+  const second =
+    confirm(
+      "This cannot be undone without a backup. Continue?"
+    );
+
+
+  if (!second) {
+
+    return;
+
+  }
+
+
+  localStorage.removeItem(
+    STORAGE_KEY
+  );
+
+
+  state = {
+
+    activeMonth: 0,
+
+    winners: {},
+
+    payments: {}
+
+  };
+
+
+  editingMonth = null;
+
+
+  createPaymentData();
+
+  save();
+
+  render();
+
+
+  alert(
+    "All data has been reset."
+  );
+
+}
+
+
+/* ======================================================
+   ESCAPE HTML
+====================================================== */
+
+function escapeHTML(value) {
+
+  const div =
+    document.createElement(
+      "div"
+    );
+
+
+  div.textContent =
+    value;
+
+
+  return div.innerHTML;
+
+}
+
+
+/* ======================================================
+   CLOSE MODAL BY CLICKING OUTSIDE
+====================================================== */
+
+document
+  .getElementById(
+    "paymentModal"
+  )
+  .addEventListener(
+    "click",
+    function(event) {
+
+      if (
+        event.target === this
+      ) {
+
+        closePaymentModal();
+
+      }
+
+    }
+  );
+
+
+/* ======================================================
+   START
+====================================================== */
+
+init();
+
+</script>
+
+</body>
+</html>
